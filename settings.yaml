@@ -1,0 +1,36 @@
+models:
+  chat_model:
+    model_name: Qwen2.5
+    api_base: http://localhost:8213/v1
+    GRAPHRAG_API_KEY: "EMPTY"
+    max_single_time: 200  # LLM调用超时时间，超过此时间将强制中断
+
+# 批量处理配置
+batch_processing:
+  output_folder: "output"  # 输出文件夹路径，存放处理结果
+  output_file_name: "malicious_code_results.jsonl"  # 输出文件名
+
+# DeepSeek OCR 配置
+deepseek_ocr:
+  model_path: "/opt/share/models/deepseek-ai/DeepSeek-OCR"  # DeepSeek OCR 模型路径
+  pdf_directory: "data"  # PDF 文件输入目录
+
+# postgres配置
+database:
+  host: "localhost" 
+  port: "5435"
+  user: "zwt"
+  password: ""
+  database: "postgres"
+  table_name: "malicious"  # 恶意代码样本表名
+  # 连接池配置
+  pool:
+    min_connections: 4  # 最小连接数
+    max_connections: 10  # 最大连接数
+    pool_recycle: 3600  # 连接回收时间（秒）
+    command_timeout: 20  # SQL 执行超时时间（秒）
+
+# API 服务器配置
+api_server:
+  host: "0.0.0.0"  # API 服务器监听地址
+  port: 8000  # API 服务器端口
