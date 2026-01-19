@@ -1,4 +1,7 @@
 import os
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import fitz
 import img2pdf
 import io
@@ -282,41 +285,105 @@ if __name__ == "__main__":
     contents_det = ''
     contents = ''
     draw_images = []
-    jdx = 0
-    for output, img in zip(outputs_list, images):
+    
+    # New processing logic
+    ocr_batch_inputs = []
+    ocr_batch_meta = []
+    page_processing_data = []
+
+    # Passo 1: Collect crops
+    for page_idx, (output, img) in enumerate(zip(outputs_list, images)):
         content = output.outputs[0].text
 
-        if '<｜end▁of▁sentence｜>' in content: # repeat no eos
+        if '<｜end▁of▁sentence｜>' in content:
             content = content.replace('<｜end▁of▁sentence｜>', '')
         else:
             if SKIP_REPEAT:
                 continue
-
         
-        page_num = f'\n<--- Page Split --->'
+        matches_ref, matches_images, mathes_other = re_match(content)
 
+        image_width, image_height = img.size
+        
+        for match_tuple in matches_ref:
+            if match_tuple[1] == 'image':
+                try:
+                    points_list = eval(match_tuple[2])
+                    for points in points_list:
+                        x1, y1, x2, y2 = points
+                        x1 = int(x1 / 999 * image_width)
+                        x2 = int(x2 / 999 * image_width)
+                        y1 = int(y1 / 999 * image_height)
+                        y2 = int(y2 / 999 * image_height)
+                        
+                        if x2 > x1 and y2 > y1:
+                            cropped = img.crop((x1, y1, x2, y2))
+                            ocr_prompt_item = {
+                                "prompt": "<image>\n<|grounding|>OCR this image.",
+                                "multi_modal_data": {"image": DeepseekOCRProcessor().tokenize_with_images(images=[cropped], bos=True, eos=True, cropping=CROP_MODE)}
+                            }
+                            ocr_batch_inputs.append(ocr_prompt_item)
+                            ocr_batch_meta.append((page_idx, match_tuple[0]))
+                except Exception as e:
+                    print(f"Crop error: {e}")
+        
+        page_processing_data.append({
+            'page_idx': page_idx,
+            'content': content,
+            'img': img,
+            'matches_ref': matches_ref,
+            'matches_images': matches_images,
+            'mathes_other': mathes_other
+        })
+
+    # Passo 2: Batch OCR
+    ocr_results_map = {}
+    if ocr_batch_inputs:
+        print(f"Running OCR on {len(ocr_batch_inputs)} detected images...")
+        ocr_outputs = llm.generate(ocr_batch_inputs, sampling_params=sampling_params)
+        
+        for idx, o_out in enumerate(ocr_outputs):
+            p_idx, match_str = ocr_batch_meta[idx]
+            text = o_out.outputs[0].text.strip()
+            text = re.sub(r'<\|ref\|>.*?<\|/ref\|><\|det\|>.*?<\|/det\|>', '', text).strip()
+            
+            if p_idx not in ocr_results_map:
+                ocr_results_map[p_idx] = {}
+            
+            if match_str in ocr_results_map[p_idx]:
+                ocr_results_map[p_idx][match_str] += "\n" + text
+            else:
+                ocr_results_map[p_idx][match_str] = text
+
+    # Passo 3: Assembly
+    jdx = 0
+    for item in page_processing_data:
+        p_idx = item['page_idx']
+        content = item['content']
+        img = item['img']
+        matches_images = item['matches_images']
+        mathes_other = item['mathes_other']
+        matches_ref = item['matches_ref']
+
+        page_num = f'\n<--- Page Split --->'
+        
         contents_det += content + f'\n{page_num}\n'
 
         image_draw = img.copy()
-
-        matches_ref, matches_images, mathes_other = re_match(content)
-        # print(matches_ref)
         result_image = process_image_with_refs(image_draw, matches_ref, jdx)
-
-
         draw_images.append(result_image)
 
+        for a_match_image in matches_images:
+            replacement = ""
+            if p_idx in ocr_results_map and a_match_image in ocr_results_map[p_idx]:
+                replacement = ocr_results_map[p_idx][a_match_image]
+            
+            content = content.replace(a_match_image, replacement + '\n')
 
-        for idx, a_match_image in enumerate(matches_images):
-            content = content.replace(a_match_image, f'![](images/' + str(jdx) + '_' + str(idx) + '.jpg)\n')
-
-        for idx, a_match_other in enumerate(mathes_other):
+        for a_match_other in mathes_other:
             content = content.replace(a_match_other, '').replace('\\coloneqq', ':=').replace('\\eqqcolon', '=:').replace('\n\n\n\n', '\n\n').replace('\n\n\n', '\n\n')
 
-
         contents += content + f'\n{page_num}\n'
-
-
         jdx += 1
 
     # with open(mmd_det_path, 'w', encoding='utf-8') as afile:
@@ -327,4 +394,3 @@ if __name__ == "__main__":
 
 
     # pil_to_pdf_img2pdf(draw_images, pdf_out_path)
-

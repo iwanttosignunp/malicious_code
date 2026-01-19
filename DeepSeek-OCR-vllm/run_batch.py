@@ -3,6 +3,7 @@ import glob
 import subprocess
 import re
 import sys
+import shutil
 import yaml
 
 # 加载配置文件
@@ -70,6 +71,17 @@ def main():
         print(f"\n处理完成。已恢复 '{CONFIG_FILE}'。")
     except Exception as e:
         print(f"警告: 恢复 '{CONFIG_FILE}' 失败: {e}")
+
+    # 清理 images 文件夹
+    output_folder = settings.get('batch_processing', {}).get('output_folder')
+    if output_folder:
+        images_dir = os.path.join(output_folder, 'images')
+        if os.path.exists(images_dir) and os.path.isdir(images_dir):
+            try:
+                shutil.rmtree(images_dir)
+                print(f"已删除生成的 images 文件夹: {images_dir}")
+            except Exception as e:
+                print(f"警告: 删除 images 文件夹失败: {e}")
 
 if __name__ == "__main__":
     main()
