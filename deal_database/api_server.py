@@ -1,5 +1,4 @@
 import yaml
-import hashlib
 import re
 import asyncio
 from typing import List, Union, Dict, Any
@@ -38,12 +37,6 @@ def get_db_config(yaml_file='settings.yaml') -> Dict[str, Any]:
         "pool_recycle": pool_config.get('pool_recycle', 3600),
         "command_timeout": pool_config.get('command_timeout', 10),
     }
-
-def generate_hash_code(code_string: str) -> bytes:
-    """生成代码字符串的 SHA256 哈希值（二进制格式）"""
-    formatted_code = ''.join(code_string.split())
-    hash_obj = hashlib.sha256(formatted_code.encode('utf-8'))
-    return hash_obj.digest()
 
 
 # 全局变量
@@ -146,7 +139,6 @@ class RecordModel(BaseModel):
 
 class ResultItemModel(BaseModel):
     code_string: str
-    hash: str
     records: List[RecordModel]
     count: int
 
@@ -171,20 +163,20 @@ async def search_malicious_code(
     all_results = []
     
     try:
+        # 子串匹配查询：数据库中的 format_code 是输入代码的子串
+        # 即：输入代码包含数据库中的代码
         sql_template = text(f"""
             SELECT id, file_name, title, malicious_code, description, hash_str
             FROM {table_name}
-            WHERE hash_code = :hash_val
+            WHERE :input_code LIKE CONCAT('%', format_code, '%')
         """)
 
         for code_str in code_strings:
-            # 去空格并计算哈希
+            # 去除空格用于匹配
             cleaned_code = re.sub(r'[\s\n]+', '', code_str)
-            hash_bytes = generate_hash_code(cleaned_code)
-            hash_hex = hash_bytes.hex()
             
-            # 执行异步查询
-            result = await session.execute(sql_template, {"hash_val": hash_bytes})
+            # 执行异步查询：查找所有 format_code 是 cleaned_code 子串的记录
+            result = await session.execute(sql_template, {"input_code": cleaned_code})
             
             # 获取结果
             rows = result.mappings().all()
@@ -204,7 +196,6 @@ async def search_malicious_code(
                 
                 all_results.append(ResultItemModel(
                     code_string=code_str,
-                    hash=hash_hex,
                     records=records,
                     count=len(records)
                 ))

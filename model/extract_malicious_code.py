@@ -245,9 +245,6 @@ def main(hash = "hash"):
                         # 生成format_code：去掉所有换行和空格
                         format_code = re.sub(r'[\s\n]+', '', modified_code)
                         
-                        # 生成hash_code：format_code的SHA256
-                        hash_code = hashlib.sha256(format_code.encode('utf-8')).hexdigest()
-                        
                         # 构建数据条目
                         data_item = {
                             "file_name": md_file,
@@ -255,7 +252,6 @@ def main(hash = "hash"):
                             "malicious_code": modified_code.strip(),
                             "describe": text_content,  # 存储代码所在一级标题下的完整内容
                             "format_code": format_code,
-                            "hash_code": hash_code,
                             "hash": hash
                         }
                         

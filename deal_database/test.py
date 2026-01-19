@@ -32,7 +32,6 @@ def test_single_code_string():
             if result['data']:
                 for item in result['data']:
                     print(f"\n代码字符串: {item['code_string'][:50]}...")
-                    print(f"哈希: {item['hash']}")
                     print(f"匹配记录数: {item['count']}")
                     for record in item['records']:
                         print(f"  - ID: {record['id']}")
@@ -55,7 +54,7 @@ def test_multiple_code_strings():
     print("=" * 60)
     
     code_list = [
-        """v27 = !sub_10015620(v4) || !sub_10010E50();""",
+        """v27 = !sub_10015620(v4) || !sub_10010E50(); bgdsa""",
         """print("Hello World")""",
         """import os"""
     ]
@@ -82,7 +81,6 @@ def test_multiple_code_strings():
             if result['data']:
                 for item in result['data']:
                     print(f"\n代码字符串: {item['code_string'][:50]}...")
-                    print(f"哈希: {item['hash']}")
                     print(f"匹配记录数: {item['count']}")
                     for record in item['records']:
                         print(f"  - ID: {record['id']}")

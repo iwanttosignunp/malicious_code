@@ -44,7 +44,7 @@ def main():
         print("数据库连接成功！")
 
         # 3. 创建表
-        # 注意：hash_code 使用 BYTEA 类型存储二进制
+        # format_code 用于子串匹配（去除空格后的代码）
         create_table_sql = f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
             id SERIAL PRIMARY KEY,
@@ -52,12 +52,12 @@ def main():
             title TEXT,
             malicious_code TEXT,
             description TEXT,
-            hash_code BYTEA,     
+            format_code TEXT,    
             hash_str TEXT        
         );
         
-        -- 为 hash_code 创建索引，因为你说之后要频繁比较它
-        CREATE INDEX IF NOT EXISTS idx_hash_code ON {table_name}(hash_code);
+        -- 为 format_code 创建索引，用于子串匹配
+        CREATE INDEX IF NOT EXISTS idx_format_code ON {table_name}(format_code);
         """
         cur.execute(create_table_sql)
         conn.commit()
@@ -78,21 +78,15 @@ def main():
                 title = data.get('title')
                 malicious_code = data.get('malicious_code')
                 description = data.get('describe')
-                
-                # 处理 hash_code: 将十六进制字符串转为二进制
-                raw_hash_hex = data.get('hash_code')
-                hash_code_bytes = None
-                if raw_hash_hex:
-                    # bytes.fromhex 将 "a1b2" 这种字符串转为 b'\xa1\xb2'
-                    hash_code_bytes = bytes.fromhex(raw_hash_hex)
+                format_code = data.get('format_code')  # 读取 format_code
                 
                 # hash 字段（原样存储）
-                original_hash = data.get('hash')
+                hash = data.get('hash')
 
-                # 执行插入 (format_code 被忽略)
+                # 执行插入
                 insert_sql = f"""
                 INSERT INTO {table_name} 
-                (file_name, title, malicious_code, description, hash_code, hash_str) 
+                (file_name, title, malicious_code, description, format_code, hash_str) 
                 VALUES (%s, %s, %s, %s, %s, %s)
                 """
                 
@@ -101,8 +95,8 @@ def main():
                     title, 
                     malicious_code, 
                     description,
-                    hash_code_bytes, 
-                    original_hash
+                    format_code,
+                    hash
                 ))
                 count += 1
 
