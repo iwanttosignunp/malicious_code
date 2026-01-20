@@ -15,7 +15,8 @@ from extract_prompt import (
     EXTRACT_CODE_USER_PROMPT,
     EXTRACT_MALICIOUS_SYSTEM_PROMPT,
     EXTRACT_MALICIOUS_USER_PROMPT,
-    MODIFIED_PROMPT
+    MODIFIED_PROMPT,
+    DESCRIBE_MALICIOUS_CODE_PROMPT
 )
 
 class ChatModel:
@@ -251,12 +252,17 @@ def main(hash = "hash"):
                             # 生成format_code：去掉所有换行和空格
                             format_code = re.sub(r'[\s\n]+', '', modified_code)
                             
+                            # 生成代码描述
+                            describe_content = llm_client.get_chat(
+                                user_prompt=DESCRIBE_MALICIOUS_CODE_PROMPT.format(CODE=modified_code, TEXT=text_content)
+                            )
+
                             # 构建数据条目
                             data_item = {
                                 "file_name": md_file,
                                 "title": title,
                                 "malicious_code": modified_code.strip(),
-                                "describe": text_content,  # 存储代码所在一级标题下的完整内容
+                                "describe": describe_content,
                                 "format_code": format_code,
                                 "hash": hash
                             }
