@@ -231,36 +231,43 @@ def main(hash = "hash"):
                             system_prompt=EXTRACT_MALICIOUS_SYSTEM_PROMPT,
                             user_prompt=EXTRACT_MALICIOUS_USER_PROMPT.format(CODE=code_fragment, TEXT=text_content)
                         )
+                        malicious_code = re.sub(r'[\u4e00-\u9fa5]', '', malicious_code)
+                        malicious_code_list = malicious_code.split('<SEPARATOR>')
                         
-                        # 修正代码格式
-                        modified_code = llm_client.get_chat(
-                            user_prompt=MODIFIED_PROMPT.format(CODE=malicious_code)
-                        )
-                        modified_code = modified_code.strip('`\n')
-                        # 检查是否为有效恶意代码
-                        if not is_valid_malicious_code(modified_code):
-                            file_skipped += 1
-                            continue
-                        
-                        # 生成format_code：去掉所有换行和空格
-                        format_code = re.sub(r'[\s\n]+', '', modified_code)
-                        
-                        # 构建数据条目
-                        data_item = {
-                            "file_name": md_file,
-                            "title": title,
-                            "malicious_code": modified_code.strip(),
-                            "describe": text_content,  # 存储代码所在一级标题下的完整内容
-                            "format_code": format_code,
-                            "hash": hash
-                        }
-                        
-                        # 立即写入JSONL文件
-                        write_single_item_to_jsonl(data_item, output_file)
-                        file_written += 1
+                        for single_malicious_code in malicious_code_list:
+                            if not single_malicious_code.strip():
+                                continue
+
+                            # 修正代码格式
+                            modified_code = llm_client.get_chat(
+                                user_prompt=MODIFIED_PROMPT.format(CODE=single_malicious_code)
+                            )
+                            modified_code = modified_code.strip('`\n')
+                            # 检查是否为有效恶意代码
+                            if not is_valid_malicious_code(modified_code):
+                                file_skipped += 1
+                                continue
+                            
+                            # 生成format_code：去掉所有换行和空格
+                            format_code = re.sub(r'[\s\n]+', '', modified_code)
+                            
+                            # 构建数据条目
+                            data_item = {
+                                "file_name": md_file,
+                                "title": title,
+                                "malicious_code": modified_code.strip(),
+                                "describe": text_content,  # 存储代码所在一级标题下的完整内容
+                                "format_code": format_code,
+                                "hash": hash
+                            }
+                            
+                            # 立即写入JSONL文件
+                            write_single_item_to_jsonl(data_item, output_file)
+                            print(f"   + 已提取并写入: {title}")
+                            file_written += 1
                         
                 except Exception as e:
-                    # print(f"处理标题 '{title}' 时出错: {str(e)}")
+                    print(f"处理标题 '{title}' 时出错: {str(e)}")
                     file_skipped += 1
                     continue
             
@@ -268,10 +275,10 @@ def main(hash = "hash"):
             global_total_written += file_written
             global_total_skipped += file_skipped
             
-            # print(f"文件处理完成 - 写入: {file_written} 条, 跳过: {file_skipped} 条")
+            print(f" 文件处理完成 - 写入: {file_written} 条, 跳过: {file_skipped} 条")
             
         except Exception as e:
-            # print(f" 处理文件 {md_file} 时出错: {str(e)}")
+            print(f" 处理文件 {md_file} 时出错: {str(e)}")
             continue
     
     print("\n" + "=" * 60)

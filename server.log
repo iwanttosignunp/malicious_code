@@ -1,0 +1,14 @@
+nohup: ignoring input
+/home/zwt/malicious_coding/deal_database/api_server.py:137: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+  class SearchRequest(BaseModel):
+INFO:     Started server process [3105165]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:5126 (Press CTRL+C to quit)
+正在初始化数据库连接池...
+匹配逻辑配置: {'input_contains_db': True, 'db_contains_input': True}
+数据库异步引擎已启动 (Table: malicious, Timeout: 20s, Pre-ping: ON)
+INFO:     127.0.0.1:55700 - "POST /search HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42302 - "POST /search HTTP/1.1" 200 OK
+INFO:     192.168.11.1:57777 - "POST /search HTTP/1.1" 200 OK
+INFO:     192.168.11.1:57894 - "POST /search HTTP/1.1" 200 OK

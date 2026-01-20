@@ -86,6 +86,21 @@ async def lifespan(app: FastAPI):
     
     # 将表名存入 app.state 供后续使用
     app.state.table_name = table_name
+    
+    # 读取完整配置以获取匹配逻辑设置
+    try:
+        with open('settings.yaml', 'r', encoding='utf-8') as f:
+            full_config = yaml.safe_load(f)
+        match_logic = full_config.get('api_server', {}).get('match_logic', {
+            'input_contains_db': True,
+            'db_contains_input': False
+        })
+        app.state.match_logic = match_logic
+        print(f"匹配逻辑配置: {match_logic}")
+    except Exception as e:
+        print(f"读取匹配逻辑配置失败，使用默认值: {e}")
+        app.state.match_logic = {'input_contains_db': True, 'db_contains_input': False}
+
     print(f"数据库异步引擎已启动 (Table: {table_name}, Timeout: {config['command_timeout']}s, Pre-ping: ON)")
     
     yield
@@ -163,12 +178,32 @@ async def search_malicious_code(
     all_results = []
     
     try:
-        # 子串匹配查询：数据库中的 format_code 是输入代码的子串
-        # 即：输入代码包含数据库中的代码
+        match_logic = app.state.match_logic
+        input_contains_db = match_logic.get('input_contains_db', True)
+        db_contains_input = match_logic.get('db_contains_input', False)
+
+        conditions = []
+        if input_contains_db:
+            # 数据库中的 format_code 是输入代码的子串 (b contains a)
+            conditions.append(":input_code LIKE CONCAT('%', format_code, '%')")
+        if db_contains_input:
+            # 输入代码是数据库中 format_code 的子串 (a contains b)
+            conditions.append("format_code LIKE CONCAT('%', :input_code, '%')")
+        
+        if not conditions:
+             return SearchResponse(
+                state='not_found',
+                message='未启用任何匹配逻辑',
+                data=[],
+                count=0
+            )
+
+        where_clause = " OR ".join(conditions)
+
         sql_template = text(f"""
             SELECT id, file_name, title, malicious_code, description, hash_str
             FROM {table_name}
-            WHERE :input_code LIKE CONCAT('%', format_code, '%')
+            WHERE {where_clause}
         """)
 
         for code_str in code_strings:
@@ -236,6 +271,6 @@ if __name__ == "__main__":
         settings = yaml.safe_load(f)
     api_config = settings.get('api_server', {})
     host = api_config.get('host', '0.0.0.0')
-    port = api_config.get('port', 8000)
-    
-    uvicorn.run(app, host=host, port=port)
+    port = api_config.get('port', 5126)
+    # uvicorn.run(app, host=host, port=port)
+    uvicorn.run(app, host=host, port=port, log_level="info")

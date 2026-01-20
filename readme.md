@@ -28,3 +28,5 @@ CUDA_VISIBLE_DEVICES=1 nohup python -m vllm.entrypoints.openai.api_server \
 8. deal_database/get_in_database.py将恶意代码存入postgres
 
 9. deal_database/api_server.py部署api服务
+   CUDA_VISIBLE_DEVICES=2 nohup python deal_database/api_server.py > server.log 2>&1 &
+   ps -ef | grep api_server.py

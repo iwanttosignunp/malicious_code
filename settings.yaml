@@ -33,4 +33,7 @@ database:
 # API 服务器配置
 api_server:
   host: "0.0.0.0"  # API 服务器监听地址
-  port: 8000  # API 服务器端口
+  port: 5126  # API 服务器端口
+  match_logic:
+    input_contains_db: true   # 如果输入代码 b 包含数据库代码 a，则匹配
+    db_contains_input: false  # 如果数据库代码 a 包含输入代码 b，则匹配
