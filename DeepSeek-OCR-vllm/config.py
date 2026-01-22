@@ -5,17 +5,6 @@
 # Large: base_size = 1280, image_size = 1280, crop_mode = False
 # Gundam: base_size = 1024, image_size = 640, crop_mode = True
 
-import yaml
-import os
-
-# 加载配置文件
-def load_settings():
-    settings_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'settings.yaml')
-    with open(settings_path, 'r', encoding='utf-8') as f:
-        return yaml.safe_load(f)
-
-settings = load_settings()
-
 BASE_SIZE = 1024
 IMAGE_SIZE = 640
 CROP_MODE = True
@@ -25,16 +14,15 @@ MAX_CONCURRENCY = 100 # If you have limited GPU memory, lower the concurrency co
 NUM_WORKERS = 64 # image pre-process (resize/padding) workers 
 PRINT_NUM_VIS_TOKENS = False
 SKIP_REPEAT = True
-MODEL_PATH = settings['deepseek_ocr']['model_path']  # 从 settings.yaml 读取
+MODEL_PATH = 'deepseek-ai/DeepSeek-OCR' # change to your model path
 
 # TODO: change INPUT_PATH
 # .pdf: run_dpsk_ocr_pdf.py; 
 # .jpg, .png, .jpeg: run_dpsk_ocr_image.py; 
 # Omnidocbench images path: run_dpsk_ocr_eval_batch.py
 
-INPUT_PATH = '/home/zwt/malicious_coding/data/0e2dd674-5079-48d3-91c0-057e4498035b_APT32.pdf' 
-OUTPUT_PATH = settings['batch_processing']['output_folder']  # 从 settings.yaml 读取
-
+INPUT_PATH = 'data/fed9c11a-b86a-49a9-a9e2-24332f01a81c.pdf'
+OUTPUT_PATH = ''
 
 PROMPT = '<image>\n<|grounding|>Convert the document to markdown.'
 # PROMPT = '<image>\nFree OCR.'

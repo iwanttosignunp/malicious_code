@@ -1,6 +1,4 @@
-1. 下载DeepSeek-OCR模型
-
-2. pip install -r requirements.txt
+1. pip install -r requirements.txt
 pip install vllm==0.8.5
 pip install flash-attn --no-cache-dir
 
@@ -14,7 +12,7 @@ CUDA_VISIBLE_DEVICES=1 nohup python -m vllm.entrypoints.openai.api_server \
 
 4. 修改settings.yaml中的batch_processing:output_folder为输出文件夹，deepseek_ocr:model_path为OCR模型路径，pdf_directory为输入的PDF文件夹  
 
-5. 运行DeepSeek-OCR-vllm/run_batch.py进行OCR识别
+5. OCR识别：CUDA_VISIBLE_DEVICES=2 python deal_database/pdf_ocr.py
 
 6. 运行model/extract_malicious_code.py抽取恶意代码
 

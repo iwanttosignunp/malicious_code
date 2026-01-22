@@ -78,17 +78,22 @@ def split_and_clean_code_prompt(code_prompt: str):
             cleaned_fragments.append(cleaned_fragment)
     return cleaned_fragments
 
-def read_md_and_split_by_h1(file_path: str):
-    """读取MD文件并按一级标题分割，返回(标题, 内容)列表"""
+def read_md_and_split_by_h1(file_path: str, chunk_size: int = 4000, overlap: int = 200):
+    """
+    读取MD文件。优先按一级标题分割；
+    如果没有一级标题，则按固定字符长度进行滑动窗口切分。
+    """
     with open(file_path, 'r', encoding='utf-8') as f:
         content = f.read()
     
-    # 按一级标题分割（匹配# 开头的标题）
+    # 尝试匹配一级标题
     h1_pattern = re.compile(r'^#\s+.+', re.MULTILINE)
     h1_matches = list(h1_pattern.finditer(content))
     
     fragments = []
+    
     if h1_matches:
+        # 按标题分割
         for i in range(len(h1_matches)):
             match = h1_matches[i]
             title = match.group().strip('# ').strip()
@@ -98,9 +103,32 @@ def read_md_and_split_by_h1(file_path: str):
             if fragment_content:
                 fragments.append((title, fragment_content))
     else:
-        # 无一级标题的情况，使用默认标题
-        fragments.append(("默认标题", content.strip()) if content.strip() else ("默认标题", ""))
-    
+        # 无标题，按长度滑动窗口切分
+        content_len = len(content)
+        if content_len == 0:
+            return [("空文档", "")]
+            
+        start = 0
+        chunk_count = 1
+        while start < content_len:
+            # 计算当前块的结束位置
+            end = min(start + chunk_size, content_len)
+            
+            # 提取片段
+            fragment_content = content[start:end].strip()
+            
+            if fragment_content:
+                title = f"自动切分片段_{chunk_count}"
+                fragments.append((title, fragment_content))
+            
+            # 如果已经处理到文件末尾，跳出循环
+            if end == content_len:
+                break
+                
+            # 移动起始位置（减去重叠部分）
+            start += (chunk_size - overlap)
+            chunk_count += 1
+            
     return fragments
 
 def is_valid_malicious_code(code: str) -> bool:

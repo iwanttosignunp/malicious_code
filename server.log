@@ -1,7 +1,5 @@
 nohup: ignoring input
-/home/zwt/malicious_coding/deal_database/api_server.py:137: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
-  class SearchRequest(BaseModel):
-INFO:     Started server process [2516291]
+INFO:     Started server process [1290270]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:5126 (Press CTRL+C to quit)
