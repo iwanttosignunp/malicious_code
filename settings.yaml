@@ -4,11 +4,14 @@ models:
     api_base: http://localhost:8213/v1
     GRAPHRAG_API_KEY: "EMPTY"
     max_single_time: 200  # LLM调用超时时间，超过此时间将强制中断
+  code_model:
+    model_path: "jina-v2"
+    max_seq_length: 8192
 
 # 批量处理配置
 batch_processing:
   output_folder: "output"  # 输出文件夹路径，存放处理结果
-  output_file_name: "malicious_code_results.jsonl"  # 输出文件名
+  output_file_name: "code_results.jsonl"  # 输出文件名
 
 # DeepSeek OCR 配置
 deepseek_ocr:
@@ -22,7 +25,7 @@ database:
   user: "zwt"
   password: ""
   database: "postgres"
-  table_name: "malicious"  # 恶意代码样本表名
+  table_name: "malicious"
   # 连接池配置
   pool:
     min_connections: 4  # 最小连接数
@@ -37,3 +40,17 @@ api_server:
   match_logic:
     input_contains_db: true   # 如果输入代码 b 包含数据库代码 a，则匹配
     db_contains_input: false  # 如果数据库代码 a 包含输入代码 b，则匹配
+
+# Weaviate 配置
+weaviate:
+  url: "http://localhost:8011"
+  class_name: "Malicious_code"
+
+# 向量搜索服务配置
+vector_search:
+  host: "0.0.0.0"
+  port: 5127
+  max_threads: 20  # 并行查询的最大线程数
+  top_k: 3  # 搜索返回的最相似结果数量
+  certainty: 0.75 # 相似度阈值
+  max_clean_threshold: 1200 # 代码清洗长度阈值

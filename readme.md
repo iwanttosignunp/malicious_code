@@ -10,21 +10,14 @@ CUDA_VISIBLE_DEVICES=1 nohup python -m vllm.entrypoints.openai.api_server \
 --dtype=half \
 --port=8213> vllm_chat_test.out &
 
-4. 修改settings.yaml中的batch_processing:output_folder为输出文件夹，deepseek_ocr:model_path为OCR模型路径，pdf_directory为输入的PDF文件夹  
+4. OCR识别：CUDA_VISIBLE_DEVICES=0 python deal_database/pdf_ocr.py
 
-5. OCR识别：CUDA_VISIBLE_DEVICES=2 python deal_database/pdf_ocr.py
+5. 运行model/extract_code.py抽取恶意代码
 
-6. 运行model/extract_malicious_code.py抽取恶意代码
+6. deal_database/get_in_weaviate.py将恶意代码存入向量库
 
-7. 安装PostgreSQL：
-    conda install -c conda-forge postgresql
-    mkdir -p my_pgdata
-    initdb -D my_pgdata
-    pg_ctl -D my_pgdata -l logfile -o "-p 5435" start
-   修改settings.yaml中的postgres配置(port/user/password)
+7. 修改settings.yaml中的code_model的model_path
+   CUDA_VISIBLE_DEVICES=0 nohup python deal_database/search_postdeal_weaviate_api.py > server.log 2>&1 & 部署api服务
+   ps -ef | grep search_postdeal_weaviate_api.py
 
-8. deal_database/get_in_database.py将恶意代码存入postgres
-
-9. deal_database/api_server.py部署api服务
-   CUDA_VISIBLE_DEVICES=2 nohup python deal_database/api_server.py > server.log 2>&1 &
-   ps -ef | grep api_server.py
+deal_database/delete_weaviate.py可以删除向量库内容
